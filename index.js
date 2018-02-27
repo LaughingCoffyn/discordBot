@@ -1,6 +1,7 @@
 const moment = require('moment')
 const Discord = require('discord.js')
 const TOKEN = process.env.JERRY_TOKEN
+const api = require('./api')
 const client = new Discord.Client({
   disableEveryone: true,
   messageCacheMaxSize: 500,
@@ -16,12 +17,15 @@ client.on('ready', async () => {
 })
 
 client.on('message', message => {
+  // console.log('message', message)
+  console.log('message.content', message.content)
+
 
   // It's good practice to ignore other bots.
   // This also makes your bot ignore itself
-  // if (message.author.bot) {
-  //   return
-  // }
+  if (message.author.bot) {
+    return
+  }
   if (message.content === 'zx') {
       console.log('member', member)
   }
@@ -81,6 +85,25 @@ client.on('message', message => {
     console.log('message.author', message.author)
     console.log('message.member', message.member)
     client.emit("Emitting guildMemberAdd event", message.author)
+  }
+  if (/^!verify/.test(message.content.toLowerCase())) {
+    console.log('Found verify!')
+    // console.log('user', message.author)
+    // console.log('message', message)
+    // console.log('message', message)
+    const userMessage = message.content.split(' ')
+    // console.log('userMessage', userMessage)
+    if (userMessage[1].length === 72) {
+      // console.log('Found valid API key', userMessage[1])
+      console.log('userMessage', userMessage[1])
+      //Implement the actual call to the API
+      message.author.accountToken = userMessage[1]
+      api.account(message.author, (err, res) => {
+        console.log('err', err)
+        console.log('res', res)
+        // Save to database
+      })
+    }
   }
 })
 
