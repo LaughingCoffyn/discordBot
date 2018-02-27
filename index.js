@@ -98,4 +98,4 @@ client.on("warn", (e) => console.warn(e))
 client.on("debug", (e) => console.info(e))
 
 // Emmiting events for testing.. Where 'guildMemberAdd' can be any envent.
-client.emit("guildMemberAdd", message.member)
+// client.emit("guildMemberAdd", message.member)
