@@ -2,6 +2,7 @@ const moment = require('moment')
 const Discord = require('discord.js')
 const TOKEN = process.env.JERRY_TOKEN
 const api = require('./api')
+const database = require('./database')
 const client = new Discord.Client({
   disableEveryone: true,
   messageCacheMaxSize: 500,
@@ -14,6 +15,10 @@ client.on('ready', async () => {
   // console.log('username:', client.user.username)
   // console.log('avatar:', client.user.avatarURL)
   // console.log('dmChannel:', client.user.dmChannel)
+  database.createDatabase((err, res) => {
+    console.log('err', err)
+    console.log('res', res)
+  })
 })
 
 client.on('message', message => {
@@ -99,9 +104,14 @@ client.on('message', message => {
       //Implement the actual call to the API
       message.author.accountToken = userMessage[1]
       api.account(message.author, (err, res) => {
-        console.log('err', err)
-        console.log('res', res)
+        if (err) console.log('err', err)
+        console.log('res =====>', res)
         // Save to database
+        database.updateUser(res, (err, res) => {
+          if (err) console.log('err', err)
+          console.log('res', res)
+
+        })
       })
     }
   }
