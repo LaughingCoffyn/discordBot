@@ -13,12 +13,13 @@ database.createDatabase = function (callback) {
 // Update an existing dataset with the data you can fetch from the API.
 database.updateUser = function (clientObject, callback) {
     mongoClient.connect(uri, function (err, db) {
-      if (err) logger.log('error', 'While connecting to DB during updateAccountInformation.')
+      if (err) console.log('error', 'While connecting to DB during updateAccountInformation.')
       var collection = db.collection('users')
+      // Checking if the API is already in use. If so do not update. API keys should be used
+      // uniquely.
       collection.find({accountToken: clientObject.accountToken}).limit(1).next(function (err, doc) {
-        if (err) logger.log('error', 'While fetching for API key during updateAccountInformation.')
+        if (err) console.log('error', 'While fetching for API key during updateAccountInformation.')
             if (doc === null) {
-                console.log('clientObject', clientObject)
                 collection.update(
                     {
                         accountId: clientObject.accountId
@@ -26,6 +27,7 @@ database.updateUser = function (clientObject, callback) {
                     {
                         clientId: clientObject.id,
                         clientNickname: clientObject.username,
+                        clientUpdatedAt: new Date().toJSON(),
                         accountToken: clientObject.accountToken,
                         accountId: clientObject.accountId,
                         accountWorld: clientObject.accountWorld,
@@ -37,9 +39,13 @@ database.updateUser = function (clientObject, callback) {
                     },
                     {
                         upsert: true
+                    }).then(() => {
+                        callback(null, clientObject)
+                        db.close()
+                    }).catch((error) => {
+                        console.log('catching error', error)
+                        db.close()
                     })
-                callback(null, clientObject)
-                db.close()
             } else {
                 callback({error: 'API-key already in use.'}, null)
                 db.close()
