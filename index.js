@@ -12,27 +12,21 @@ const client = new Discord.Client({
 
 client.on('ready', async () => {
   console.log('i am ready!')
-  // console.log('username:', client.user.username)
-  // console.log('avatar:', client.user.avatarURL)
-  // console.log('dmChannel:', client.user.dmChannel)
   database.createDatabase((err, res) => {
-    console.log('err', err)
-    console.log('res', res)
+    if (err) console.log('err', err)
+    // console.log('res', res)
   })
 })
 
 client.on('message', message => {
   // console.log('message', message)
-  console.log('message.content', message.content)
+  // console.log('message.content', message.content)
 
 
   // It's good practice to ignore other bots.
   // This also makes your bot ignore itself
   if (message.author.bot) {
     return
-  }
-  if (message.content === 'zx') {
-      console.log('member', member)
   }
   if (message.content === 'test') {
     // console.log('message', message)
@@ -87,30 +81,59 @@ client.on('message', message => {
     client.destroy()
   }
   if (message.content === '$guildMemberAdd') {
-    console.log('message.author', message.author)
-    console.log('message.member', message.member)
+    // console.log('message.author', message.author)
+    // console.log('message.member', message.member)
     client.emit("Emitting guildMemberAdd event", message.author)
   }
+  if (message.content === 'role') {
+    // console.log('author', message.author)
+    // console.log('message.author.roles', message.author.roles)
+    if (message.author.roles instanceof Array) {
+      message.author.roles.map((role) => {
+        console.log('role:', role)
+      })
+    }
+    if (message.member) {
+      let perms = message.member.permissions
+      console.log(`perms`, perms)
+      const myRole = perms.member.roles.find(`name`, `@alliance`)
+      console.log(`myRole`, myRole)
+      // Answer with roles only if there are any
+      if (myRole) {
+        message.reply(`Your role id: ${myRole.id}, your role's name: ${myRole.name}`)
+      // In any other case ask for registration
+      } else {
+        message.reply(`You are not assigned any roles please register using your API key.`)
+      }
+    }
+  }
+  // We are expecting a text message like:
+  //`!verify XXXXXX-XXXXXX-XXXXXX-XXXXXXX-XXXXXXXXXX-XXXXXXXXX-XXXXXXXX-XXXXXXXXXXXXX`
+  // The API key gets validated and the the user objectgets stored in the database
+  // We remove the text message thus the API key from the text channel
+  // and grant the related role.
   if (/^!verify/.test(message.content.toLowerCase())) {
-    console.log('Found verify!')
-    // console.log('user', message.author)
-    // console.log('message', message)
-    // console.log('message', message)
     const userMessage = message.content.split(' ')
-    // console.log('userMessage', userMessage)
     if (userMessage[1].length === 72) {
-      // console.log('Found valid API key', userMessage[1])
-      console.log('userMessage', userMessage[1])
+      // The message here is supposed to come from a text based channel. We should remove the
+      // message containing the API key so it can not be abused.
+      message.delete()
       //Implement the actual call to the API
       message.author.accountToken = userMessage[1]
       api.account(message.author, (err, res) => {
-        if (err) console.log('err', err)
-        console.log('res =====>', res)
-        // Save to database
+        if (err) console.log(`err`, err)
         database.updateUser(res, (err, res) => {
-          if (err) console.log('err', err)
-          console.log('res', res)
-
+          if (err) {
+            console.log(`err`, err)
+          } else {
+            message.member.addRole(`420199612675129345`)
+            .then((resolve) => {
+              console.log(`resolve`, resolve)
+            })
+            .catch((reject) => {
+              console.log(`reject`, reject)
+            })
+          }
         })
       })
     }
@@ -126,9 +149,9 @@ client.login(TOKEN)
 
 // Debugging logs. Note from the docs: The debug event WILL output your token,
 // so exercise caution when handing over a debug log.
-client.on("error", (e) => console.error(e))
-client.on("warn", (e) => console.warn(e))
-client.on("debug", (e) => console.info(e))
+client.on("error", (e) => console.error(`error`, e))
+client.on("warn", (e) => console.warn(`warning`, e))
+client.on("debug", (e) => console.info(`debug`, e))
 
 // Emmiting events for testing.. Where 'guildMemberAdd' can be any envent.
 // client.emit("guildMemberAdd", message.member)
