@@ -19,46 +19,12 @@ client.on('ready', async () => {
 })
 
 client.on('message', message => {
-  // console.log('message', message)
-  // console.log('message.content', message.content)
-
-
   // It's good practice to ignore other bots.
   // This also makes your bot ignore itself
   if (message.author.bot) {
     return
   }
-  if (message.content === 'test') {
-    // console.log('message', message)
-    // console.log('message.author', message.author)
-    // Send a question to a channel and await the answer. Respond
-    message.channel.send('What tag would you like to see?' +
-        ' This will await will be cancelled in 10 seconds.' +
-        ' It will finish when you provide a message that goes through the filter the first time.'
-      )
-      .then(() => {
-        message.channel.awaitMessages(response => response.content === 'oi', {
-          max: 1,
-          time: 10000,
-          errors: ['time'],
-      })
-      .then((collected) => {
-        message.channel.send(`The collected message was: ${collected.first().content}`)
-      })
-      .catch(() => {
-        message.channel.send('There was no collected message that passed the filter within the time limit!')
-      })
-    })
-  }
-  if (message.content === 'Hey') {
-    message.delete()
-      .then((text) => {
-        console.log('text', text)
-      })
-      .catch((error) => {
-        console.log('error', error)
-      })
-  }
+
   if (message.content === 'invite') {
     // fetch a new invite link, wait for the response of this API call then send
     // the link back.
@@ -72,19 +38,17 @@ client.on('message', message => {
         console.log('error.stack', error.stack)
       })
   }
+
   if (message.content === 'date') {
     console.log('date command')
     message.reply('Current date: ' + moment().format('LLLL'))
   }
+
   if (message.content === '!!shutdown') {
     message.reply('shutting down now..')
     client.destroy()
   }
-  if (message.content === '$guildMemberAdd') {
-    // console.log('message.author', message.author)
-    // console.log('message.member', message.member)
-    client.emit("Emitting guildMemberAdd event", message.author)
-  }
+
   if (message.content === 'role') {
     // console.log('author', message.author)
     // console.log('message.author.roles', message.author.roles)
@@ -140,18 +104,13 @@ client.on('message', message => {
   }
 })
 
-client.on("guildMemberAdd", (member) => {
-  // console.log(`New User "${member.user.username}" has joined "${member.guild.name}"` )
-  // member.guild.channels.get("welcome").send(`"${member.user.username}" has joined this server`)
-})
-
 client.login(TOKEN)
 
 // Debugging logs. Note from the docs: The debug event WILL output your token,
 // so exercise caution when handing over a debug log.
-client.on("error", (e) => console.error(`error`, e))
-client.on("warn", (e) => console.warn(`warning`, e))
-client.on("debug", (e) => console.info(`debug`, e))
+client.on("error", (e) => console.error(`${new Date().toJSON()} error`, e))
+client.on("warn", (e) => console.warn(`${new Date().toJSON()} warning`, e))
+client.on("debug", (e) => console.info(`${new Date().toJSON()} debug`, e))
 
 // Emmiting events for testing.. Where 'guildMemberAdd' can be any envent.
 // client.emit("guildMemberAdd", message.member)
