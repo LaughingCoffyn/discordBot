@@ -44,6 +44,15 @@ client.on('message', message => {
     message.reply('Current date: ' + moment().format('LLLL'))
   }
 
+  // Checking a users state in private chat.. I really want to find a global solution.. RETHINK this
+  // approach!!
+  if (message.content === 'status') {
+    console.log('status command')
+    console.log('Author', message.author.presence)
+    message.reply('Checking status..')
+    message.reply('Your current status is:', message.author.presence.status)
+  }
+
   if (message.content === '!!shutdown') {
     message.reply('shutting down now..')
     client.destroy()
@@ -81,21 +90,24 @@ client.on('message', message => {
     if (userMessage[1].length === 72) {
       // The message here is supposed to come from a text based channel. We should remove the
       // message containing the API key so it can not be abused.
-      message.delete()
-      //Implement the actual call to the API
       message.author.accountToken = userMessage[1]
       api.account(message.author, (err, res) => {
         if (err) console.log(`err`, err)
         database.updateUser(res, (err, res) => {
           if (err) {
             console.log(`err`, err)
+            message.reply(`${err.error}`)
           } else {
+            // Have the roleID stored somewhere please.
             message.member.addRole(`420199612675129345`)
             .then((resolve) => {
               console.log(`resolve`, resolve)
+              console.log(`userRole`, message.member.permissions.member.roles.find(`420199612675129345`))
+              message.delete()
             })
             .catch((reject) => {
               console.log(`reject`, reject)
+              message.delete()
             })
           }
         })
@@ -111,6 +123,16 @@ client.login(TOKEN)
 client.on("error", (e) => console.error(`${new Date().toJSON()} error`, e))
 client.on("warn", (e) => console.warn(`${new Date().toJSON()} warning`, e))
 client.on("debug", (e) => console.info(`${new Date().toJSON()} debug`, e))
+
+// Detectingthe presence of a user.. we might have to check the previous state here as well
+// to ensure if was `offline` before and is `online` now.. Do I really need to do that?!
+// Do I really want to do this? One way would be  wo store that information in the local database
+// and then check the database everytime a state changes for the database informtaion.. not really
+// a problem but I would like to find a better way!!
+client.on('presenceUpdate', (e) => {
+  console.info(`${new Date().toJSON()} debug`, e)
+  console.log(`${new Date().toJSON()} presence event fired and received!!!!!`)
+})
 
 // Emmiting events for testing.. Where 'guildMemberAdd' can be any envent.
 // client.emit("guildMemberAdd", message.member)
