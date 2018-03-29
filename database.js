@@ -18,38 +18,42 @@ database.updateUser = function (clientObject, callback) {
       // Checking if the API is already in use. If so do not update. API keys should be used
       // uniquely.
       collection.find({accountToken: clientObject.accountToken}).limit(1).next(function (err, doc) {
-        if (err) console.log('error', 'While fetching for API key during updateAccountInformation.')
-            if (doc === null) {
-                collection.update(
-                    {
-                        accountId: clientObject.accountId
-                    },
-                    {
-                        clientId: clientObject.id,
-                        clientNickname: clientObject.username,
-                        clientUpdatedAt: new Date().toJSON(),
-                        accountToken: clientObject.accountToken,
-                        accountId: clientObject.accountId,
-                        accountWorld: clientObject.accountWorld,
-                        accountName: clientObject.accountName,
-                        accountGuilds: clientObject.accountGuilds,
-                        accountCreated: clientObject.accountCreated,
-                        accountAccess: clientObject.accountAccess,
-                        accountCommander: clientObject.accountCommander
-                    },
-                    {
-                        upsert: true
-                    }).then(() => {
-                        callback(null, clientObject)
-                        db.close()
-                    }).catch((error) => {
-                        console.log('catching error', error)
-                        db.close()
-                    })
-            } else {
-                callback({error: 'API-key already in use.'}, null)
-                db.close()
+        if (err) {
+          console.log('error', 'While fetching for API key during updateAccountInformation.')
+        }
+        if (doc === null) {
+          collection.update(
+            {
+              accountId: clientObject.accountId
+            },
+            {
+              clientId: clientObject.id,
+              clientNickname: clientObject.username,
+              clientUpdatedAt: new Date().toJSON(),
+              accountToken: clientObject.accountToken,
+              accountId: clientObject.accountId,
+              accountWorld: clientObject.accountWorld,
+              accountName: clientObject.accountName,
+              accountGuilds: clientObject.accountGuilds,
+              accountCreated: clientObject.accountCreated,
+              accountAccess: clientObject.accountAccess,
+              accountCommander: clientObject.accountCommander
+            },
+            {
+              upsert: true
+            }).then((resolve) => {
+              console.log(`resolve`, resolve)
+              callback(null, clientObject)
+              db.close()
+            }).catch((reject) => {
+              console.log(`reject`, reject)
+              db.close()
             }
-        })
-    })
+          )
+        } else {
+          callback({error: `API-key already in use.`}, null)
+          db.close()
+        }
+     })
+  })
 }
