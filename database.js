@@ -42,18 +42,33 @@ database.updateUser = function (clientObject, callback) {
             {
               upsert: true
             }).then((resolve) => {
-              console.log(`resolve`, resolve)
+              console.log(`${new Date().toJSON()} resolve:`, resolve)
               callback(null, clientObject)
               db.close()
             }).catch((reject) => {
-              console.log(`reject`, reject)
+              console.log(`${new Date().toJSON()} reject:`, reject)
               db.close()
             }
           )
         } else {
-          callback({error: `API-key already in use.`}, null)
+          callback({error: `API-key already in use.`}, doc)
           db.close()
         }
      })
+  })
+}
+
+ // Get client by clientId.
+database.getClientByUid = function (uid, callback) {
+  mongoClient.connect(uri, function (err, db) {
+    if (err) logger.log('error', 'While connecting to DB during getApiKey.')
+    var collection = db.collection('users')
+    collection.find({clientId: uid}).limit(1).next(function (err, doc) {
+      console.log(`database error:`, err)
+      console.log(`database userobject:`, doc)
+      if (err) callback(err, null)
+      callback(null, doc)
+      db.close()
+    })
   })
 }
