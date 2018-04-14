@@ -21,7 +21,65 @@ client.on('ready', async () => {
 })
 
 function recheckAPIKey(guildMember) {
+  // Rechecking API key on reconnect
   console.log(`GuildMember:`, guildMember)
+  console.log(`GuildMember.user:`, guildMember.user)
+  database.getClientByUid(guildMember.user.id, (err, doc) => {
+    console.log(`getClientByUid err`, err)
+    console.log(`getClientByUid doc`, doc)
+    if (doc) {
+      // Recognized user, we have an entry.. recheck here!
+      console.log(`Recognizing already existing user!\n`, doc)
+      if (doc.accountToken) {
+        // IF we have a Toek please recheck against the official API.
+        // TODO: 3(three) cases here
+        // 1. Key is vaild - update current data.
+        // 2. Invalid API key - Remove from database (soft delete?)
+        // API not reachable.. keep current data and ignore for now? Error habdling needs to be
+        // defined here!!!
+        console.log(`Found account token!\n`, doc.accountToken)
+        api.account(doc, (err, res) => {
+          console.log(`api account err`, err)
+          console.log(`api account res`, res)
+          if (res && res.accountId === doc.accountId) {
+            // Update account data here! Any of the game account related data might ahve changed
+            // so let's update it here.
+            // Response should at least match the accountId from the database, otherwise DO NOT update
+            database.updateUser(res, (err, res) => {
+              // Here the `err` will also callback because the API key is actually in use by the
+              // current user we are checking here.
+              console.log(`Done updating user error`, err)
+              console.log(`Done updating user res`, res)
+              // Make sure to grant role accordingly.
+              // Do we need additional checks here? What are the pre-requirements for a user to get
+              // access to our role(s)?
+              guildMember.addRole(roleId)
+            })
+          } else {
+            // Add error handling here if necessary.
+            console.log(`Error while checking account @API`, err)
+          }
+        })
+      }
+      // Make sure to remove the role if the user has no accountToken.
+      if (!doc.accountToken) {
+        console.log(`User with invalid accountToken`, doc.accountToken)
+        // Revoke access here!
+        try {
+          guildMember.removeRole(roleId)
+          .then((resolve) => {
+            console.log(`${new Date().toJSON()} Invalid accountToken - removing Role:`, resolve)
+          })
+          .catch((reject) => {
+            console.error
+            console.log(`${new Date().toJSON()} reject`, reject)
+          })
+        } catch (error) {
+          console.log(`Error while trying to remove role from guildMember`, error)
+        }
+      }
+    }
+  })
 }
 
 function validateAccountData({message}) {
@@ -38,6 +96,13 @@ function validateAccountData({message}) {
   api.account(message.author, (err, res) => {
     if (err) console.log(`${new Date().toJSON()} response from API:`, err)
     database.updateUser(res, (err, res) => {
+      // Compare user form database with user from chat. Then act upon it
+      console.log(`${new Date().toJSON()} Database user:`, res)
+      console.log(`${new Date().toJSON()} messageauthor:`, message.author)
+
+      if (res.id === message.author.id) {
+
+      }
       if (err) {
         console.log(`${new Date().toJSON()} err`, err)
         message.reply(`${err.error}`)
@@ -57,11 +122,10 @@ function validateAccountData({message}) {
           })
         }
       } else {
-        // Have the roleID stored somewhere please.
+        // TODO: Have the roleID stored somewhere please.
         message.member.addRole(roleId)
         .then((resolve) => {
           console.log(`resolve`, resolve)
-          console.log(`${new Date().toJSON()} userRole`, message.member.permissions.member.roles.find(roleId))
           message.delete()
         })
         .catch((reject) => {
@@ -114,9 +178,8 @@ client.on('message', message => {
     client.destroy()
   }
 
+  // Chat command to check roles.
   if (message.content === 'role') {
-    // console.log('author', message.author)
-    // console.log('message.author.roles', message.author.roles)
     if (message.author.roles instanceof Array) {
       message.author.roles.map((role) => {
         console.log('role:', role)
@@ -124,10 +187,8 @@ client.on('message', message => {
     }
     if (message.member) {
       let perms = message.member.permissions
-      console.log(`perms`, perms)
       const myRole = perms.member.roles.find(`name`, `@alliance`)
-      console.log(`myRole`, myRole)
-      // Answer with roles only if there are any
+      // Answer with ID & role only if this user is part of the specified role.
       if (myRole) {
         message.reply(`Your role id: ${myRole.id}, your role's name: ${myRole.name}`)
       // In any other case ask for registration
