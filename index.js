@@ -20,6 +20,21 @@ client.on('ready', async () => {
   })
 })
 
+revokeGuildMemberAccess = (guildMember) => {
+  try {
+    guildMember.removeRole(roleId)
+    .then((resolve) => {
+      console.log(`${new Date().toJSON()} Invalid accountToken - removing Role:`, resolve)
+    })
+    .catch((reject) => {
+      console.error
+      console.log(`${new Date().toJSON()} reject`, reject)
+    })
+  } catch (error) {
+    console.log(`${new Date().toJSON()} Error while trying to remove role from guildMember`, error)
+  }
+}
+
 function recheckAPIKey(guildMember) {
   // Rechecking API key on reconnect
   console.log(`GuildMember:`, guildMember)
@@ -67,19 +82,14 @@ function recheckAPIKey(guildMember) {
       if (!doc.accountToken) {
         console.log(`User with invalid accountToken`, doc.accountToken)
         // Revoke access here!
-        try {
-          guildMember.removeRole(roleId)
-          .then((resolve) => {
-            console.log(`${new Date().toJSON()} Invalid accountToken - removing Role:`, resolve)
-          })
-          .catch((reject) => {
-            console.error
-            console.log(`${new Date().toJSON()} reject`, reject)
-          })
-        } catch (error) {
-          console.log(`Error while trying to remove role from guildMember`, error)
-        }
+        revokeGuildMemberAccess(guildMember)
       }
+    }
+    // Database is working as expected and we don't know this user. What's next? Maybe send an invite?
+    if (err === null && doc === null) {
+      console.log(`${new Date().toJSON()} User without data!`)
+      // Make sure to remove guild roles if they are present
+      revokeGuildMemberAccess(guildMember)
     }
   })
 }
