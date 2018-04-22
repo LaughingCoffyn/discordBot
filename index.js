@@ -16,7 +16,7 @@ client.on('ready', async () => {
   console.log('i am ready!')
   database.createDatabase((err, res) => {
     if (err) console.log('err', err)
-    // console.log('res', res)
+    console.log('res', res)
   })
 })
 
@@ -31,8 +31,8 @@ function recheckAPIKey(guildMember) {
       // Recognized user, we have an entry.. recheck here!
       console.log(`Recognizing already existing user!\n`, doc)
       if (doc.accountToken) {
-        // IF we have a Toek please recheck against the official API.
-        // TODO: 3(three) cases here
+        // IF we have a Token please recheck against the official API.
+        // TODO: 3(three) cases here.
         // 1. Key is vaild - update current data.
         // 2. Invalid API key - Remove from database (soft delete?)
         // API not reachable.. keep current data and ignore for now? Error habdling needs to be
@@ -41,8 +41,10 @@ function recheckAPIKey(guildMember) {
         api.account(doc, (err, res) => {
           console.log(`api account err`, err)
           console.log(`api account res`, res)
+          // If we have a response we can assume there is an account attached to the key. If our
+          // database user and the game user have the same id this qualifies as a match.
           if (res && res.accountId === doc.accountId) {
-            // Update account data here! Any of the game account related data might ahve changed
+            // Update account data here! Any of the game account related data might have changed
             // so let's update it here.
             // Response should at least match the accountId from the database, otherwise DO NOT update
             database.updateUser(res, (err, res) => {
