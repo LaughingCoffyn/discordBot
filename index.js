@@ -20,7 +20,8 @@ client.on('ready', async () => {
   })
 })
 
-revokeGuildMemberAccess = (guildMember) => {
+revokeGuildMemberAccess = ({guildMember}) => {
+  console.log(`guildMember`, guildMember)
   try {
     guildMember.removeRole(roleId)
     .then((resolve) => {
@@ -32,6 +33,24 @@ revokeGuildMemberAccess = (guildMember) => {
     })
   } catch (error) {
     console.log(`${new Date().toJSON()} Error while trying to remove role from guildMember`, error)
+  }
+}
+
+revokeMessageMemberRole = ({message}) => {
+  console.log(`MESSAGE`, message)
+  try {
+    message.member.removeRole(roleId)
+      .then((resolve) => {
+        console.log(`${new Date().toJSON()} removeRole:`, resolve)
+        message.delete()
+      })
+      .catch((reject) => {
+        console.error
+        console.log(`${new Date().toJSON()} reject`, reject)
+        message.delete()
+      })
+  } catch (error) {
+    console.log(`${new Date().toJSON()} Error while trying to remove role from messageMember`, error)
   }
 }
 
@@ -82,14 +101,14 @@ function recheckAPIKey(guildMember) {
       if (!doc.accountToken) {
         console.log(`User with invalid accountToken`, doc.accountToken)
         // Revoke access here!
-        revokeGuildMemberAccess(guildMember)
+        revokeGuildMemberAccess({guildMember})
       }
     }
     // Database is working as expected and we don't know this user. What's next? Maybe send an invite?
     if (err === null && doc === null) {
       console.log(`${new Date().toJSON()} User without data!`)
       // Make sure to remove guild roles if they are present
-      revokeGuildMemberAccess(guildMember)
+      revokeGuildMemberAccess({guildMember})
     }
   })
 }
@@ -122,16 +141,8 @@ function validateAccountData({message}) {
         // Registration key already in use
         if (err.error === `API-key already in use.`) {
           // Removing the role should also remove the `accountToken` from an account
-          message.member.removeRole(roleId)
-          .then((resolve) => {
-            console.log(`${new Date().toJSON()} removeRole:`, resolve)
-            message.delete()
-          })
-          .catch((reject) => {
-            console.error
-            console.log(`${new Date().toJSON()} reject`, reject)
-            message.delete()
-          })
+          // TODO: IF I send my key twice I will lose my access.. please rethink this one!
+          revokeMessageMemberRole({message})
         }
       } else {
         // TODO: Have the roleID stored somewhere please.
