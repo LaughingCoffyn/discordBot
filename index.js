@@ -20,7 +20,7 @@ client.on('ready', async () => {
   })
 })
 
-revokeGuildMemberAccess = ({guildMember}) => {
+const revokeGuildMemberAccess = ({guildMember}) => {
   console.log(`guildMember`, guildMember)
   try {
     guildMember.removeRole(roleId)
