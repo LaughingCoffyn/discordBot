@@ -54,7 +54,7 @@ revokeMessageMemberRole = ({message}) => {
   }
 }
 
-function recheckAPIKey(guildMember) {
+const recheckAPIKey = ({guildMember})  => {
   // Rechecking API key on reconnect
   console.log(`GuildMember:`, guildMember)
   console.log(`GuildMember.user:`, guildMember.user)
@@ -113,7 +113,7 @@ function recheckAPIKey(guildMember) {
   })
 }
 
-function validateAccountData({message}) {
+const validateAccountData = ({message}) => {
   console.log(`${new Date().toJSON()} message:`, message)
   // console.log(`chatMessage:`, chatMessage)
   if (message.content) {
@@ -259,7 +259,7 @@ client.on('presenceUpdate', (e) => {
   if (e.frozenPresence.status !== `online` && e.user.presence.status) {
     // Recheck API key here
     console.log(`User just came online`)
-    recheckAPIKey(e)
+    recheckAPIKey({guildMember: e})
   }
 
 })

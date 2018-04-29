@@ -19,7 +19,7 @@ node .
 ```
 4. You will need to register your App [@Discord](https://discordapp.com/developers/applications/me). create a Bot user and  genereate a new Token. Publish that token as environmental variable on your system
 ```bash
-echo "export TOKEN=YOURTOKEN" >> .bashrc
+echo "export TOKEN=<YOURTOKEN>" >> .bashrc
 ```
 ```bash
 source .bashrc
