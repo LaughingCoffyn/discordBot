@@ -1,4 +1,3 @@
-const moment = require('moment')
 const Discord = require('discord.js')
 const TOKEN = process.env.JERRY_TOKEN
 const api = require('./api')
