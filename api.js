@@ -2,7 +2,7 @@ const api = exports
 const util = require('util')
 const https = require('https')
 
-api.account = function (userObject, callback) {
+api.account = (userObject, callback) => {
   const token = userObject.accountToken || userObject.accountToken
   let user = userObject
   const options = {
