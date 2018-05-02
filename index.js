@@ -1,58 +1,63 @@
-const Discord = require('discord.js')
+const Discord = require(`discord.js`)
 const TOKEN = process.env.JERRY_TOKEN
-const api = require('./api')
-const database = require('./database')
-const apiKey = require('./apiKey')
-const chatCommands = require('./chatCommands')
+const api = require(`./api`)
+const database = require(`./database`)
+const apiKey = require(`./apiKey`)
+const chatCommands = require(`./chatCommands`)
+const logger = require(`./logger`)
+const helper = require(`./helper`)
+const config = helper.getConfig()
 
 const client = new Discord.Client({
-  disableEveryone: true,
-  messageCacheMaxSize: 500,
-  messageCacheLifetime: 120,
-  messageSweepInterval: 60,
+    disableEveryone: true,
+    messageCacheMaxSize: 500,
+    messageCacheLifetime: 120,
+    messageSweepInterval: 60,
 })
 
-const roleId = `420199612675129345`
-const admins = ['347687241772040192']
+const roleId = config.roleId
+const admins = config.admins
 
 // Secret login token.
 client.login(TOKEN)
 
-client.on('ready', async () => {
-  database.createDatabase((err, res) => {
-    if (err) console.log('err', err)
-    console.log('res', res)
-  })
+client.on(`ready`, async () => {
+    database.createDatabase((err, res) => {
+        if (err) logger.log(`debug`, err)
+        logger.log(`debug`, res)
+    })
 })
 
 client.on('message', message => {
-  // It's good practice to ignore other bots.
-  // This also makes your bot ignore itself
-  if (message.author.bot) {
-    return
-  }
-
-  // Check if a user is in the list of admins.
-  const isAdmin = admins.some((adminId) => adminId === message.author.id )
-
-  // Admin only commands.
-  if (isAdmin) {
-    chatCommands.check({message, client})
-  }
-
-  // We are expecting a text message like:
-  //`!verify XXXXXX-XXXXXX-XXXXXX-XXXXXXX-XXXXXXXXXX-XXXXXXXXX-XXXXXXXX-XXXXXXXXXXXXX`
-  // The API key gets validated and the the user objectgets stored in the database
-  // We remove the text message thus the API key from the text channel
-  // and grant the related role.
-  if (/^!verify/.test(message.content.toLowerCase())) {
-    const chatMessage = message.content.split(' ')
-    if (chatMessage[1].length === 72) {
-      // The message here is supposed to come from a text based channel. We should remove the
-      // message containing the API key so it can not be abused.
-      apiKey.validateAccountData({message})
+    // It's good practice to ignore other bots.
+    // This also makes your bot ignore itself
+    if (message.author.bot) {
+        return
     }
-  }
+
+    // Check if a user is in the list of admins.
+    const isAdmin = admins.some((adminId) => adminId === message.author.id )
+
+    // Admin only commands.
+    if (isAdmin) {
+        chatCommands.check({message, client})
+    }
+
+    // We are expecting a text message like:
+    //`!verify XXXXXX-XXXXXX-XXXXXX-XXXXXXX-XXXXXXXXXX-XXXXXXXXX-XXXXXXXX-XXXXXXXXXXXXX`
+    // The API key gets validated and the the user objectgets stored in the database
+    // We remove the text message thus the API key from the text channel
+    // and grant the related role.
+    if (/^!verify/.test(message.content.toLowerCase())) {
+        logger.log(`debug`, `Verify message received..`)
+        const chatMessage = message.content.split(' ')
+        if (chatMessage[1].length === 72) {
+            logger.log(`debug`, `Key is 72 characters long..`)
+            // The message here is supposed to come from a text based channel. We should remove the
+            // message containing the API key so it can not be abused.
+            apiKey.validateAccountData({message})
+        }
+    }
 })
 
 
@@ -68,16 +73,16 @@ client.on("debug", (e) => console.info(`${new Date().toJSON()} debug`, e))
 // and then check the database everytime a state changes for the database informtaion.. not really
 // a problem but I would like to find a better way!!
 client.on('presenceUpdate', (e) => {
-  // Frozen presence is the last state before the current one (the one the user just changed to).
-  // console.log(`Last known presence state`, e.frozenPresence.status)
-  // console.log(`Current presence state`, e.user.presence.status)
+    // Frozen presence is the last state before the current one (the one the user just changed to).
+    // console.log(`Last known presence state`, e.frozenPresence.status)
+    // console.log(`Current presence state`, e.user.presence.status)
 
-  // When a user comes online - Recheck the current API key.
-  if (e.frozenPresence.status !== `online` && e.user.presence.status) {
-    // Recheck API key here
-    console.log(`User just came online`)
-    apiKey.recheck({guildMember: e})
-  }
+    // When a user comes online - Recheck the current API key.
+    if (e.frozenPresence.status !== `online` && e.user.presence.status) {
+        // Recheck API key here
+        logger.log(`debug`, `User just changed presence state`)
+        apiKey.recheck({guildMember: e})
+    }
 })
 
 // Emmiting events for testing.. Where 'guildMemberAdd' can be any envent.

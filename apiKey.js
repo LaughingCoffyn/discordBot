@@ -1,23 +1,25 @@
 const apiKey = exports
-const api = require('./api')
-const database = require('./database')
+const api = require(`./api`)
+const database = require(`./database`)
+const logger = require(`./logger`)
+const util = require(`util`)
 
 const roleId = `420199612675129345`
 
 
 const revokeGuildMemberAccess = ({ guildMember }) => {
-    console.log(`guildMember`, guildMember)
+    logger.log(`debug`, `guildMember: ${guildMember}`)
     try {
         guildMember.removeRole(roleId)
             .then((resolve) => {
-                console.log(`${new Date().toJSON()} Invalid accountToken - removing Role:`, resolve)
+                logger.log(`info`, `Invalid accountToken - removing Role: ${resolve}`)
             })
             .catch((reject) => {
-                console.error
-                console.log(`${new Date().toJSON()} reject`, reject)
+                // console.error
+                logger.log(`debug`, `Invalid accountToken - removing Role reject: ${reject}`)
             })
     } catch (error) {
-        console.log(`${new Date().toJSON()} Error while trying to remove role from guildMember`, error)
+        logger.log(`debug`, `Error while trying to remove role from guildMember: ${error}`)
     }
 }
 
@@ -26,29 +28,28 @@ const revokeMessageMemberRole = ({ message }) => {
     try {
         message.member.removeRole(roleId)
             .then((resolve) => {
-                console.log(`${new Date().toJSON()} removeRole:`, resolve)
+                logger.log(`info`, `Removing Role: ${resolve}`)
                 message.delete()
             })
             .catch((reject) => {
-                console.error
-                console.log(`${new Date().toJSON()} reject`, reject)
+                logger.log(`debug`, `Removing Role reject: ${reject}`)
                 message.delete()
             })
     } catch (error) {
-        console.log(`${new Date().toJSON()} Error while trying to remove role from messageMember`, error)
+        logger.log(`debug`, `Error while trying to remove role from messageMember ${error}`)
     }
 }
 
 apiKey.recheck = ({ guildMember }) => {
     // Rechecking API key on reconnect
-    console.log(`GuildMember:`, guildMember);
-    console.log(`GuildMember.user:`, guildMember.user);
+    logger.log(`debug`, `GuildMember: ${guildMember}`);
+    logger.log(`debug`, `GuildMember.user: ${guildMember.user}`);
     database.getClientByUid(guildMember.user.id, (err, doc) => {
-        console.log(`getClientByUid err`, err);
-        console.log(`getClientByUid doc`, doc);
+        logger.log(`debug`, `Method call 'getClientByUid' error: ${err}`);
+        logger.log(`debug`, `Method call 'getClientByUid' doc: ${util.inspect(doc)}`);
         if (doc) {
             // Recognized user, we have an entry.. recheck here!
-            console.log(`Recognizing already existing user!\n`, doc);
+            logger.log(`debug`, `Recognizing already existing user: ${util.inspect(doc)}`);
             if (doc.accountToken) {
                 // IF we have a Token please recheck against the official API.
                 // TODO: 3(three) cases here.
@@ -56,10 +57,10 @@ apiKey.recheck = ({ guildMember }) => {
                 // 2. Invalid API key - Remove from database (soft delete?)
                 // API not reachable.. keep current data and ignore for now? Error habdling needs to be
                 // defined here!!!
-                console.log(`Found account token!\n`, doc.accountToken);
+                logger.log(`debug`, `Found account token: ${doc.accountToken}`);
                 api.account(doc, (err, res) => {
-                    console.log(`api account err`, err);
-                    console.log(`api account res`, res);
+                    logger.log(`debug`, `Method call 'api.account' err: ${err}`);
+                    logger.log(`debug`, `Method call 'api.account' res: ${res}`);
                     // If we have a response we can assume there is an account attached to the key. If our
                     // database user and the game user have the same id this qualifies as a match.
                     if (res && res.accountId === doc.accountId) {
@@ -69,8 +70,8 @@ apiKey.recheck = ({ guildMember }) => {
                         database.updateUser(res, (err, res) => {
                             // Here the `err` will also callback because the API key is actually in use by the
                             // current user we are checking here.
-                            console.log(`Done updating user error`, err);
-                            console.log(`Done updating user res`, res);
+                            logger.log(`debug`, `Method call 'database.updateUser' error: ${err}`);
+                            logger.log(`debug`, `Method call 'database.updateUser' res: ${res}`);
                             // Make sure to grant role accordingly.
                             // Do we need additional checks here? What are the pre-requirements for a user to get
                             // access to our role(s)?
@@ -79,20 +80,20 @@ apiKey.recheck = ({ guildMember }) => {
                     }
                     else {
                         // Add error handling here if necessary.
-                        console.log(`Error while checking account @API`, err);
+                        logger.log(`debug`, `Method call 'api.account' error: ${err}`);
                     }
                 });
             }
             // Make sure to remove the role if the user has no accountToken.
             if (!doc.accountToken) {
-                console.log(`User with invalid accountToken`, doc.accountToken);
+                logger.log(`debug`, `User with invalid accountToken: ${doc.accountToken}`);
                 // Revoke access here!
                 revokeGuildMemberAccess({ guildMember });
             }
         }
         // Database is working as expected and we don't know this user. What's next? Maybe send an invite?
         if (err === null && doc === null) {
-            console.log(`${new Date().toJSON()} User without data!`);
+            logger.log(`debug`, `User without data - revoking Role: ${guildMember}`);
             // Make sure to remove guild roles if they are present
             revokeGuildMemberAccess({ guildMember });
         }
@@ -114,14 +115,14 @@ apiKey.validateAccountData = ({ message }) => {
         if (err) console.log(`${new Date().toJSON()} response from API:`, err)
         database.updateUser(res, (err, res) => {
             // Compare user form database with user from chat. Then act upon it
-            console.log(`${new Date().toJSON()} Database user:`, res)
-            console.log(`${new Date().toJSON()} messageauthor:`, message.author)
+            logger.log(`debug`, `Method call 'database.udateUser: ${res}`)
+            logger.log(`debug`, `Method call 'database.udateUser: ${message.author}`)
 
             if (res.id === message.author.id) {
 
             }
             if (err) {
-                console.log(`${new Date().toJSON()} err`, err)
+                logger.log(`debug`, `Method call 'database.updateUser' error: ${err}`)
                 message.reply(`${err.error}`)
                 message.delete()
                 // Registration key already in use
@@ -134,12 +135,11 @@ apiKey.validateAccountData = ({ message }) => {
                 // TODO: Have the roleID stored somewhere please.
                 message.member.addRole(roleId)
                     .then((resolve) => {
-                        console.log(`resolve`, resolve)
+                        logger.log(`debug`, `Method call message.member.addRole - resolve: ${resolve}`)
                         message.delete()
                     })
                     .catch((reject) => {
-                        console.error
-                        console.log(`${new Date().toJSON()} reject`, reject)
+                        logger.log(`debug`, `Method call message.member.addRole - reject: ${reject}`)
                         message.delete()
                     })
             }
