@@ -3,8 +3,10 @@ const api = require(`./api`)
 const database = require(`./database`)
 const logger = require(`./logger`)
 const util = require(`util`)
+const helper = require(`./helper`)
+const config = helper.getConfig()
 
-const roleId = `420199612675129345`
+const roleId = config.roleId
 
 
 const revokeGuildMemberAccess = ({ guildMember }) => {
@@ -100,9 +102,9 @@ apiKey.recheck = ({ guildMember }) => {
     });
 }
 
+// Validates an API key that got sent via a chat message
 apiKey.validateAccountData = ({ message }) => {
-    console.log(`${new Date().toJSON()} message:`, message)
-    // console.log(`chatMessage:`, chatMessage)
+    logger.log(`debug`, `Method call 'apiKey.validateAccountData' message: ${message}`)
     if (message.content) {
         let chatMessage = message.content.split(' ')
         if (chatMessage[1].length === 72) {
@@ -115,8 +117,8 @@ apiKey.validateAccountData = ({ message }) => {
         if (err) console.log(`${new Date().toJSON()} response from API:`, err)
         database.updateUser(res, (err, res) => {
             // Compare user form database with user from chat. Then act upon it
-            logger.log(`debug`, `Method call 'database.udateUser: ${res}`)
-            logger.log(`debug`, `Method call 'database.udateUser: ${message.author}`)
+            logger.log(`debug`, `Method call 'database.udateUser': ${res}`)
+            logger.log(`debug`, `Method call 'database.udateUser': ${message.author}`)
 
             if (res.id === message.author.id) {
 
