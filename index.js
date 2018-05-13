@@ -40,7 +40,7 @@ client.on('message', message => {
 
     // Admin only commands.
     if (isAdmin) {
-        chatCommands.check({message, client})
+        chatCommands.check({ message, client })
     }
 
     // We are expecting a text message like:
@@ -50,8 +50,8 @@ client.on('message', message => {
     // and grant the related role.
     if (/^!verify/.test(message.content.toLowerCase())) {
         logger.log(`debug`, `Verify message received..`)
-        const chatMessage = message.content.split(' ')
-        if (chatMessage[1].length === 72) {
+        // const chatMessage = message.content.split(' ')[1]
+        if (message.content.split(' ')[1].length === 72) {
             logger.log(`debug`, `Key is 72 characters long..`)
             // The message here is supposed to come from a text based channel. We should remove the
             // message containing the API key so it can not be abused.
@@ -63,9 +63,9 @@ client.on('message', message => {
 
 // Debugging logs. Note from the docs: The debug event WILL output your token,
 // so exercise caution when handing over a debug log.
-client.on("error", (e) => console.error(`${new Date().toJSON()} error`, e))
-client.on("warn", (e) => console.warn(`${new Date().toJSON()} warning`, e))
-client.on("debug", (e) => console.info(`${new Date().toJSON()} debug`, e))
+client.on("error", (e) => logger.log(`error`, `Client event 'error': ${e}`))
+client.on("warn", (e) => logger.log(`warning`, `Client event 'warning': ${e}`))
+client.on("debug", (e) => logger.log(`debug`, `Client event 'debug': ${e}`))
 
 // Detectingthe presence of a user.. we might have to check the previous state here as well
 // to ensure if was `offline` before and is `online` now.. Do I really need to do that?!
@@ -74,9 +74,6 @@ client.on("debug", (e) => console.info(`${new Date().toJSON()} debug`, e))
 // a problem but I would like to find a better way!!
 client.on('presenceUpdate', (e) => {
     // Frozen presence is the last state before the current one (the one the user just changed to).
-    // console.log(`Last known presence state`, e.frozenPresence.status)
-    // console.log(`Current presence state`, e.user.presence.status)
-
     // When a user comes online - Recheck the current API key.
     if (e.frozenPresence.status !== `online` && e.user.presence.status) {
         // Recheck API key here

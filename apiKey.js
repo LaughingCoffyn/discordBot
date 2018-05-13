@@ -17,7 +17,6 @@ const revokeGuildMemberAccess = ({ guildMember }) => {
                 logger.log(`info`, `Invalid accountToken - removing Role: ${resolve}`)
             })
             .catch((reject) => {
-                // console.error
                 logger.log(`debug`, `Invalid accountToken - removing Role reject: ${reject}`)
             })
     } catch (error) {
@@ -26,7 +25,7 @@ const revokeGuildMemberAccess = ({ guildMember }) => {
 }
 
 const revokeMessageMemberRole = ({ message }) => {
-    console.log(`MESSAGE`, message)
+    logger.log(`debug`, `Method call 'revokeMessageMemberRole' message: ${message}`)
     try {
         message.member.removeRole(roleId)
             .then((resolve) => {
@@ -114,7 +113,7 @@ apiKey.validateAccountData = ({ message }) => {
         //Grab API key from the database
     }
     api.account(message.author, (err, res) => {
-        if (err) console.log(`${new Date().toJSON()} response from API:`, err)
+        if (err) logger.log(`debug`, `Method call 'api.account' error: ${err}`)
         database.updateUser(res, (err, res) => {
             // Compare user form database with user from chat. Then act upon it
             logger.log(`debug`, `Method call 'database.udateUser': ${res}`)
