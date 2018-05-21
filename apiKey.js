@@ -59,31 +59,33 @@ apiKey.recheck = ({ guildMember }) => {
                 // API not reachable.. keep current data and ignore for now? Error habdling needs to be
                 // defined here!!!
                 logger.log(`debug`, `Found account token: ${doc.accountToken}`);
-                api.account(doc, (err, res) => {
-                    logger.log(`debug`, `Method call 'api.account' err: ${err}`);
-                    logger.log(`debug`, `Method call 'api.account' res: ${res}`);
-                    // If we have a response we can assume there is an account attached to the key. If our
-                    // database user and the game user have the same id this qualifies as a match.
-                    if (res && res.accountId === doc.accountId) {
-                        // Update account data here! Any of the game account related data might have changed
-                        // so let's update it here.
-                        // Response should at least match the accountId from the database, otherwise DO NOT update
-                        database.updateUser(res, (err, res) => {
-                            // Here the `err` will also callback because the API key is actually in use by the
-                            // current user we are checking here.
-                            logger.log(`debug`, `Method call 'database.updateUser' error: ${err}`);
-                            logger.log(`debug`, `Method call 'database.updateUser' res: ${res}`);
-                            // Make sure to grant role accordingly.
-                            // Do we need additional checks here? What are the pre-requirements for a user to get
-                            // access to our role(s)?
-                            guildMember.addRole(roleId);
-                        });
-                    }
-                    else {
-                        // Add error handling here if necessary.
-                        logger.log(`debug`, `Method call 'api.account' error: ${err}`);
-                    }
-                });
+                api.account(doc)
+                    .then((user) => {
+                        logger.log(`debug`, `Resolving 'api.account' for user: ${user.accountName} - ${user.accountId}`)
+                        // If we have a response we can assume there is an account attached to the key. If our
+                        // database user and the game user have the same id this qualifies as a match.
+                        if (user && user.accountId === doc.accountId) {
+                            // Update account data here! Any of the game account related data might have changed
+                            // so let's update it here.
+                            // Response should at least match the accountId from the database, otherwise DO NOT update
+                            database.updateUser(user, (err, res) => {
+                                // Here the `err` will also callback because the API key is actually in use by the
+                                // current user we are checking here.
+                                logger.log(`debug`, `Method call 'database.updateUser' error: ${err}`);
+                                logger.log(`debug`, `Method call 'database.updateUser' res: ${res}`);
+                                // Make sure to grant role accordingly.
+                                // Do we need additional checks here? What are the pre-requirements for a user to get
+                                // access to our role(s)?
+                                guildMember.addRole(roleId);
+                            });
+                        } else {
+                            // Add error handling here if necessary.
+                            logger.log(`debug`, `Method call 'api.account' error: ${err}`);
+                        }
+                    })
+                    .catch((reject) => {
+                        logger.log(`debug`, `Rejecting 'api.account': ${reject}`)
+                    })
             }
             // Make sure to remove the role if the user has no accountToken.
             if (!doc.accountToken) {

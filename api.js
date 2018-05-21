@@ -3,98 +3,55 @@ const util = require('util')
 const https = require('https')
 const logger = require(`./logger`)
 
-api.account = (userObject, callback) => {
-    const token = userObject.accountToken || userObject.accountToken
-    let user = userObject
-    const options = {
-        hostname: 'api.guildwars2.com',
-        path: '/v2/account',
-        method: 'GET',
-        headers: {
-            Authorization: 'Bearer ' + token
+api.account = (userObject) => {
+    logger.log(`debug`, `Method call 'api.account' param received: ${userObject}`)
+    return new Promise((resolve, reject) => {
+        // TODO: Handle 'undefined' token here? Return early?
+        const token = userObject.accountToken
+        let user = userObject
+        const options = {
+            hostname: 'api.guildwars2.com',
+            path: '/v2/account',
+            method: 'GET',
+            headers: {
+                Authorization: 'Bearer ' + token
+            }
         }
-    }
-    // TODO: Please simplify.
-    https.get(options, function (response) {
-        response.on('data', function (data) {
-            switch (response.statusCode) {
-                case 200:
+
+        https.get(options, (response) => {
+            // Make sure this can handle chunked data!
+            response.on('data', (data) => {
+                try {
+                    // Parse the date reveived here.
                     const httpsRequest = JSON.parse(data)
                     const guilds = httpsRequest.guilds
                     // Add information gathered with api call to user.
-                    user.accountToken = token
-                    user.accountId = httpsRequest.id
-                    user.accountName = httpsRequest.name
-                    user.accountGuilds = guilds
-                    user.accountCreated = httpsRequest.created
-                    user.accountWorld = httpsRequest.world.toString()
-                    user.accountAccess = httpsRequest.access
-                    user.accountCommander = httpsRequest.commander
-                    callback(null, user)
-                    break
-                case 400:
-                    const httpsRequest400 = JSON.parse(data)
-                    switch (httpsRequest400.text) {
-                        case 'invalid key':
-                            logger.log('info', 'Server responding with "Invalid key" -> ' + response.statusCode)
-                            if (user.token === undefined) {
-                                user.token = user.msg
-                            }
-                            user.apiServerStatus = response.statusCode
-                            user.apiServerStatusReason = httpsRequest400.text
-                            callback(user, null)
-                            break
-                        case 'ErrBadData':
-                            logger.log('info', 'Server responding with "ErrBadData" -> ' + response.statusCode)
-                            if (user.token === undefined) {
-                                user.token = user.msg
-                            }
-                            user.apiServerStatus = response.statusCode
-                            user.apiServerStatusReason = httpsRequest400.text
-                            callback(user, null)
-                            break
-                        default:
-                            logger.log('error', 'Server responding -> ' + response.statusCode + ': ' + util.inspect(httpsRequest400))
-                            if (user.token === undefined) {
-                                user.token = user.msg
-                            }
-                            user.apiServerStatus = response.statusCode
-                            callback(user, null)
-                            break
+                    user = {
+                        accountToken: token,
+                        accountId: httpsRequest.id,
+                        accountName: httpsRequest.name,
+                        accountGuilds: guilds,
+                        accountCreated: httpsRequest.created,
+                        accountWorld: httpsRequest.world.toString(),
+                        accountAccess: httpsRequest.access,
+                        accountCommander: httpsRequest.commander,
                     }
-                    break
-                case 403:
-                    const httpsRequest403 = JSON.parse(data)
-                    logger.log('info', 'Server responding -> ' + response.statusCode + ': ' + util.inspect(httpsRequest403))
-                    if (user.token === undefined) {
-                        user.token = user.msg
-                    }
-                    user.apiServerStatus = response.statusCode
-                    callback(user, null)
-                    break
-                case 502:
-                    logger.log('info', 'Server not responding -> ' + response.statusCode)
-                    if (user.token === undefined) {
-                        user.token = user.msg
-                    }
-                    user.apiServerStatus = response.statusCode
-                    callback(user, null)
-                    break
-                case 503:
-                    logger.log('info', 'Server busy -> ' + response.statusCode)
-                    if (user.token === undefined) {
-                        user.token = user.msg
-                    }
-                    user.apiServerStatus = response.statusCode
-                    callback(user, null)
-                    break
-            }
+
+                } catch (error) {
+                    logger.log(`debug`, `Event handler 'onData' in 'https.get' - Failed to parse data: ${error}`)
+                    reject(error)
+                }
+            })
+            response.on(`end`, () => {
+                logger.log(`debug`,`Event handler 'onEnd' in 'https.get'`)
+                resolve(user)
+            })
+            response.on(`error`, (error) => {
+                logger.log('error', 'Error on HTTPS request to API. ' + error)
+                logger.log('error', 'While calling \'api.guildwars.com/v2/account\'.' + ' token: \'' + token + '\'')
+            })
+        }).on(`error`, (res) => {
+            logger.log('debug', 'HTTP request failed during API-key validation.' + res)
         })
-        response.on('error', function (error) {
-            if (error) logger.log('error', 'Error on HTTPS request to API. ' + error)
-            logger.log('error', 'While calling \'api.guildwars.com/v2/account\'.' + ' token: \'' + token + '\'')
-        })
-    }).on('error', function (res) {
-        logger.log('debug', 'HTTP request failed during API-key validation.' + res)
     })
 }

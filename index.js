@@ -71,6 +71,7 @@ client.on("debug", (e) => logger.log(`debug`, `Client event 'debug': ${e}`))
 // to ensure if was `offline` before and is `online` now.. Do I really need to do that?!
 // Do I really want to do this? One way would be  wo store that information in the local database
 // and then check the database everytime a state changes for the database informtaion.. not really
+
 // a problem but I would like to find a better way!!
 client.on('presenceUpdate', (e) => {
     // Frozen presence is the last state before the current one (the one the user just changed to).

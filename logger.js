@@ -19,7 +19,7 @@ logger.log = (level, message) => {
                 message = util.inspect(message)
             }
         }
-        logger.log(`debug`, `Logger level: ${level} and message: ${message}`)
+        console.log(`${new Date().toJSON()}: ${level} - ${message}`)
         fs.appendFile(path.join(__dirname, '/log'), `${new Date().toJSON()} ${level} ${message} \n`, (err) => {
             if (err) {
                 logger.log('error', 'Failed to write to log file!')
