@@ -7,6 +7,8 @@ const chatCommands = require(`./chatCommands`)
 const logger = require(`./logger`)
 const helper = require(`./helper`)
 const config = helper.getConfig()
+const roleId = config.roleId
+const admins = config.admins
 
 const client = new Discord.Client({
     disableEveryone: true,
@@ -14,9 +16,6 @@ const client = new Discord.Client({
     messageCacheLifetime: 120,
     messageSweepInterval: 60,
 })
-
-const roleId = config.roleId
-const admins = config.admins
 
 // Secret login token.
 client.login(TOKEN)

@@ -5,9 +5,7 @@ const logger = require(`./logger`)
 const util = require(`util`)
 const helper = require(`./helper`)
 const config = helper.getConfig()
-
 const roleId = config.roleId
-
 
 const revokeGuildMemberAccess = ({ guildMember }) => {
     logger.log(`debug`, `guildMember: ${guildMember}`)
@@ -59,7 +57,7 @@ apiKey.recheck = ({ guildMember }) => {
                 // API not reachable.. keep current data and ignore for now? Error habdling needs to be
                 // defined here!!!
                 logger.log(`debug`, `Found account token: ${doc.accountToken}`);
-                api.account(doc)
+                api.account({ userObject: doc })
                     .then((user) => {
                         logger.log(`debug`, `Resolving 'api.account' for user: ${user.accountName} - ${user.accountId}`)
                         // If we have a response we can assume there is an account attached to the key. If our
@@ -114,38 +112,41 @@ apiKey.validateAccountData = ({ message }) => {
     } else {
         //Grab API key from the database
     }
-    api.account(message.author, (err, res) => {
-        if (err) logger.log(`debug`, `Method call 'api.account' error: ${err}`)
-        database.updateUser(res, (err, res) => {
-            // Compare user form database with user from chat. Then act upon it
-            logger.log(`debug`, `Method call 'database.udateUser': ${res}`)
-            logger.log(`debug`, `Method call 'database.udateUser': ${message.author}`)
+    api.account({ userObject: message.author })
+        .then((user) => {
+            database.updateUser(user, (err, res) => {
+                // Compare user form database with user from chat. Then act upon it
+                logger.log(`debug`, `Method call 'database.udateUser': ${res}`)
+                logger.log(`debug`, `Method call 'database.udateUser': ${message.author}`)
 
-            if (res.id === message.author.id) {
+                if (res.id === message.author.id) {
 
-            }
-            if (err) {
-                logger.log(`debug`, `Method call 'database.updateUser' error: ${err}`)
-                message.reply(`${err.error}`)
-                message.delete()
-                // Registration key already in use
-                if (err.error === `API-key already in use.`) {
-                    // Removing the role should also remove the `accountToken` from an account
-                    // TODO: IF I send my key twice I will lose my access.. please rethink this one!
-                    revokeMessageMemberRole({ message })
                 }
-            } else {
-                // TODO: Have the roleID stored somewhere please.
-                message.member.addRole(roleId)
-                    .then((resolve) => {
-                        logger.log(`debug`, `Method call message.member.addRole - resolve: ${resolve}`)
-                        message.delete()
-                    })
-                    .catch((reject) => {
-                        logger.log(`debug`, `Method call message.member.addRole - reject: ${reject}`)
-                        message.delete()
-                    })
-            }
+                if (err) {
+                    logger.log(`debug`, `Method call 'database.updateUser' error: ${err}`)
+                    message.reply(`${err.error}`)
+                    message.delete()
+                    // Registration key already in use
+                    if (err.error === `API-key already in use.`) {
+                        // Removing the role should also remove the `accountToken` from an account
+                        // TODO: IF I send my key twice I will lose my access.. please rethink this one!
+                        revokeMessageMemberRole({ message })
+                    }
+                } else {
+                    // TODO: Have the roleID stored somewhere please.
+                    message.member.addRole(roleId)
+                        .then((resolve) => {
+                            logger.log(`debug`, `Method call message.member.addRole - resolve: ${resolve}`)
+                            message.delete()
+                        })
+                        .catch((reject) => {
+                            logger.log(`debug`, `Method call message.member.addRole - reject: ${reject}`)
+                            message.delete()
+                        })
+                }
+            })
         })
-    })
+        .catch((reject) => {
+            logger.log(`debug`, `Rejecting while calling 'api.account': ${reject}`)
+        })
 }

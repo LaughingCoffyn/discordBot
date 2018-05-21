@@ -3,7 +3,7 @@ const util = require('util')
 const https = require('https')
 const logger = require(`./logger`)
 
-api.account = (userObject) => {
+api.account = ({ userObject }) => {
     logger.log(`debug`, `Method call 'api.account' param received: ${userObject}`)
     return new Promise((resolve, reject) => {
         // TODO: Handle 'undefined' token here? Return early?
