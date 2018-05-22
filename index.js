@@ -1,5 +1,4 @@
 const Discord = require(`discord.js`)
-const TOKEN = process.env.JERRY_TOKEN
 const api = require(`./api`)
 const database = require(`./database`)
 const apiKey = require(`./apiKey`)
@@ -17,6 +16,7 @@ const client = new Discord.Client({
     messageSweepInterval: 60,
 })
 
+const TOKEN = process.env.JERRY_TOKEN
 // Secret login token.
 client.login(TOKEN)
 

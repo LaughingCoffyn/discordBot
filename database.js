@@ -1,7 +1,7 @@
 const database = exports
 const mongoClient = require('mongodb').MongoClient
-const uri = 'mongodb://localhost:27017/discordBot'
 const logger = require(`./logger`)
+const uri = 'mongodb://localhost:27017/discordBot'
 
 // Creata a new Database, only executes if there is no database yet.
 database.createDatabase = (callback) => {

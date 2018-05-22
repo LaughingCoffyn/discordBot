@@ -47,11 +47,11 @@ api.account = ({ userObject }) => {
                 resolve(user)
             })
             response.on(`error`, (error) => {
-                logger.log('error', 'Error on HTTPS request to API. ' + error)
-                logger.log('error', 'While calling \'api.guildwars.com/v2/account\'.' + ' token: \'' + token + '\'')
+                logger.log(`error`, `Error on HTTPS request to API: ${error}`)
+                logger.log(`error`, `While calling \'api.guildwars.com/v2/account\' token: '${token}'`)
             })
         }).on(`error`, (res) => {
-            logger.log('debug', 'HTTP request failed during API-key validation.' + res)
+            logger.log(`debug`, `HTTP request failed during API-key validation: ${res}`)
         })
     })
 }
