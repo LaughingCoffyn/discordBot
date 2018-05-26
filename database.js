@@ -1,5 +1,6 @@
 const database = exports
 const mongoClient = require('mongodb').MongoClient
+const util = require('util')
 const logger = require(`./logger`)
 const uri = 'mongodb://localhost:27017/discordBot'
 
@@ -19,6 +20,7 @@ database.updateUser = (clientObject, callback) => {
         // Checking if the API is already in use. If so do not update. API keys should be used
         // uniquely.
         collection.find({accountToken: clientObject.accountToken}).limit(1).next((err, doc) => {
+            logger.log(`debug`, `clientObject ${clientObject}`)
             if (err) {
               logger.log('error', 'While fetching for API key during updateAccountInformation.')
             }
@@ -29,8 +31,8 @@ database.updateUser = (clientObject, callback) => {
                     },
                     { $set:
                         {
-                            clientId: clientObject.id,
-                            clientNickname: clientObject.username,
+                            clientId: clientObject.clientId,
+                            clientNickname: clientObject.clientNickname,
                             clientUpdatedAt: new Date().toJSON(),
                             accountToken: clientObject.accountToken,
                             accountId: clientObject.accountId,
@@ -67,8 +69,8 @@ database.getClientByUid = (uid, callback) => {
         if (err) logger.log('error', 'While connecting to DB during getApiKey.')
         let collection = db.collection('users')
         collection.find({clientId: uid}).limit(1).next((err, doc) => {
-            logger.log(`debug`, `Method call 'collection.find({clientId: uid})' error: ${err}`)
-            logger.log(`debug`, `Method call 'collection.find({clientId: uid})' userobject: ${doc}`)
+            logger.log(`debug`, `Method call 'collection.find({clientId: uid})' error: ` + util.inspect(err))
+            logger.log(`debug`, `Method call 'collection.find({clientId: uid})' userobject: ` + util.inspect(doc))
             if (err) callback(err, null)
             callback(null, doc)
             db.close()

@@ -41,14 +41,12 @@ const revokeMessageMemberRole = ({ message }) => {
 
 apiKey.recheck = ({ guildMember }) => {
     // Rechecking API key on reconnect
-    logger.log(`debug`, `GuildMember: ${guildMember}`);
-    logger.log(`debug`, `GuildMember.user: ${guildMember.user}`);
+    logger.log(`debug`, `GuildMember: ` + util.inspect(guildMember));
     database.getClientByUid(guildMember.user.id, (err, doc) => {
-        logger.log(`debug`, `Method call 'getClientByUid' error: ${err}`);
-        logger.log(`debug`, `Method call 'getClientByUid' doc: ${util.inspect(doc)}`);
+        logger.log(`debug`, `Method call 'getClientByUid' error: ` + util.inspect(err));
+        logger.log(`debug`, `Method call 'getClientByUid' doc: ` + util.inspect(doc));
         if (doc) {
             // Recognized user, we have an entry.. recheck here!
-            logger.log(`debug`, `Recognizing already existing user: ${util.inspect(doc)}`);
             if (doc.accountToken) {
                 // IF we have a Token please recheck against the official API.
                 // TODO: 3(three) cases here.
@@ -69,16 +67,13 @@ apiKey.recheck = ({ guildMember }) => {
                             database.updateUser(user, (err, res) => {
                                 // Here the `err` will also callback because the API key is actually in use by the
                                 // current user we are checking here.
-                                logger.log(`debug`, `Method call 'database.updateUser' error: ${err}`);
-                                logger.log(`debug`, `Method call 'database.updateUser' res: ${res}`);
+                                logger.log(`debug`, `Method call 'database.updateUser' error: ` + util.inspect(err));
+                                logger.log(`debug`, `Method call 'database.updateUser' res: ` + util.inspect(res));
                                 // Make sure to grant role accordingly.
                                 // Do we need additional checks here? What are the pre-requirements for a user to get
                                 // access to our role(s)?
                                 guildMember.addRole(roleId);
                             });
-                        } else {
-                            // Add error handling here if necessary.
-                            logger.log(`debug`, `Method call 'api.account' error: ${err}`);
                         }
                     })
                     .catch((reject) => {
@@ -108,45 +103,48 @@ apiKey.validateAccountData = ({ message }) => {
         let chatMessage = message.content.split(' ')
         if (chatMessage[1].length === 72) {
             message.author.accountToken = chatMessage[1]
-        }
-    } else {
-        //Grab API key from the database
-    }
-    api.account({ userObject: message.author })
-        .then((user) => {
-            database.updateUser(user, (err, res) => {
-                // Compare user form database with user from chat. Then act upon it
-                logger.log(`debug`, `Method call 'database.udateUser': ${res}`)
-                logger.log(`debug`, `Method call 'database.udateUser': ${message.author}`)
-
-                if (res.id === message.author.id) {
-
-                }
-                if (err) {
-                    logger.log(`debug`, `Method call 'database.updateUser' error: ${err}`)
-                    message.reply(`${err.error}`)
-                    message.delete()
-                    // Registration key already in use
-                    if (err.error === `API-key already in use.`) {
-                        // Removing the role should also remove the `accountToken` from an account
-                        // TODO: IF I send my key twice I will lose my access.. please rethink this one!
-                        revokeMessageMemberRole({ message })
+            api.account({ userObject: message.author })
+                .then((user) => {
+                    user = {
+                        ...user,
+                        clientId: message.author.id,
+                        clientNickname: message.author.username,
                     }
-                } else {
-                    // TODO: Have the roleID stored somewhere please.
-                    message.member.addRole(roleId)
-                        .then((resolve) => {
-                            logger.log(`debug`, `Method call message.member.addRole - resolve: ${resolve}`)
+                    database.updateUser(user, (err, res) => {
+                        // Compare user form database with user from chat. Then act upon it
+                        logger.log(`debug`, `Method call 'database.udateUser': ${res}`)
+                        logger.log(`debug`, `Method call 'database.udateUser': ${message.author}`)
+
+                        if (res.id === message.author.id) {
+
+                        }
+                        if (err) {
+                            logger.log(`debug`, `Method call 'database.updateUser' error: ${err}`)
+                            message.reply(`${err.error}`)
                             message.delete()
-                        })
-                        .catch((reject) => {
-                            logger.log(`debug`, `Method call message.member.addRole - reject: ${reject}`)
-                            message.delete()
-                        })
-                }
-            })
-        })
-        .catch((reject) => {
-            logger.log(`debug`, `Rejecting while calling 'api.account': ${reject}`)
-        })
+                            // Registration key already in use
+                            if (err.error === `API-key already in use.`) {
+                                // Removing the role should also remove the `accountToken` from an account
+                                // TODO: IF I send my key twice I will lose my access.. please rethink this one!
+                                revokeMessageMemberRole({ message })
+                            }
+                        } else {
+                            // TODO: Have the roleID stored somewhere please.
+                            message.member.addRole(roleId)
+                                .then((resolve) => {
+                                    logger.log(`debug`, `Method call message.member.addRole - resolve: ${resolve}`)
+                                    message.delete()
+                                })
+                                .catch((reject) => {
+                                    logger.log(`debug`, `Method call message.member.addRole - reject: ${reject}`)
+                                    message.delete()
+                                })
+                        }
+                    })
+                })
+                .catch((reject) => {
+                    logger.log(`debug`, `Rejecting while calling 'api.account': ${reject}`)
+                })
+        }
+    }
 }
